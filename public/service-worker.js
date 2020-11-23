@@ -18,10 +18,10 @@ const urlsToCache = [
     if (event.request.url.includes("/api/")) {
       event.respondWith(
         caches.open(DATA_CACHE_NAME).then(cache => {
-  
+            //try fetching normally 
           return fetch(event.request)
             .then(response => {
-           
+                //store cache if the response was ok
               if (response.status === 200) {
                 cache.put(event.request.url, response.clone());
               }
@@ -29,7 +29,7 @@ const urlsToCache = [
               return response;
             })
   
-         
+            //if the response fails it will pull the correct data from the cache
             .catch(err => {
               
               return cache.match(event.request);
@@ -40,3 +40,17 @@ const urlsToCache = [
       return;
     }
 
+    //block handles all home page calls 
+    event.respondWith(
+        fetch(event.request).catch(function() {
+          return caches.match(event.request).then(function(response) {
+            if (response) {
+              return response;
+            } else if (event.request.headers.get("accept").includes("text/html")) {
+              
+              return caches.match("/");
+            }
+          });
+        })
+      );
+    });
